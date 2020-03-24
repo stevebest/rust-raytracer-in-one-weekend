@@ -14,16 +14,14 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
     }
 }
 
-fn color(scene: &Scene, ray: &Ray) -> Vec3<u8> {
-    let c = if let Some(hit) = scene.hit(ray, 0.0, std::f32::INFINITY) {
+fn render(scene: &Scene, ray: &Ray) -> Vec3f {
+    if let Some(hit) = scene.hit(ray, 0.0, std::f32::INFINITY) {
         (hit.n + Vec3f::new(1.0, 1.0, 1.0)) * 0.5
     } else {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
         pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
-    };
-
-    to_color(c)
+    }
 }
 
 struct HitStruct {
@@ -92,8 +90,9 @@ impl Hit for Sphere {
 }
 
 fn main() {
-    let nx = 200;
-    let ny = 100;
+    let nx = 200; // image width, in pixels
+    let ny = 100; // image height, in pixels
+    let ns = 8; // number of samples per pixel
 
     let mut scene = Scene {
         objects: Vec::new(),
@@ -115,18 +114,23 @@ fn main() {
 
     let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
 
+    use rand::prelude::*;
+    let mut rng = rand::thread_rng();
+
     for j in (0..ny).rev() {
         for i in 0..nx {
-            let u = (i as f32) / (nx as f32);
-            let v = (j as f32) / (ny as f32);
+            let mut col = Vec3f::new(0.0, 0.0, 0.0);
+            for _ in 0..ns {
+                let u = ((i as f32) + rng.gen::<f32>()) / (nx as f32);
+                let v = ((j as f32) + rng.gen::<f32>()) / (ny as f32);
+                let ray = camera.get_ray(u, v);
+                col += render(&scene, &ray);
+            }
+            let col = to_color(col * (ns as f32).recip());
 
-            let ray = camera.get_ray(u, v);
-
-            let color = color(&scene, &ray);
-
-            pixels.push(color.x);
-            pixels.push(color.y);
-            pixels.push(color.z);
+            pixels.push(col.x);
+            pixels.push(col.y);
+            pixels.push(col.z);
             pixels.push(255);
         }
     }

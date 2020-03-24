@@ -81,6 +81,15 @@ where
     }
 }
 
+impl<T> std::ops::AddAssign for Vec3<T>
+where
+    T: Numeric<T>,
+{
+    fn add_assign(&mut self, rhs: Vec3<T>) {
+        *self = *self + rhs
+    }
+}
+
 ///
 /// Vector-scalar multiplication.
 ///

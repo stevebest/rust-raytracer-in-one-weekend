@@ -17,6 +17,9 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
 
 fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     if let Some(hit) = scene.hit(ray, 0.0, std::f32::INFINITY) {
+        if limit == 0 {
+            return Vec3f::new(0.0, 0.0, 0.0);
+        }
         let mut attenuation = Vec3f::new(0.0, 0.0, 0.0);
         if let Some(scattered) = hit.material.scatter(ray, &hit, &mut attenuation) {
             let c = render(scene, &scattered, limit - 1);
@@ -64,29 +67,43 @@ fn main() {
     };
 
     use pbrt::material::lambertian::Lambertian;
+    use pbrt::material::metal::Metal;
+
     use pbrt::shape::sphere::Sphere;
 
-    let green_mat = Lambertian {
-        albedo: Vec3f::new(0.1, 0.8, 0.2),
-    };
-
-    let red_mat = Lambertian {
-        albedo: Vec3f::new(0.9, 0.1, 0.1),
-    };
-
     let s1 = Sphere {
-        center: Point3f::new(0.0, 0.0, -1.0),
+        center: Point3f::new(0.0, 0.0, -2.0),
         radius: 0.5,
-        material: &red_mat,
+        material: &Lambertian {
+            albedo: Vec3f::new(0.8, 0.3, 0.3),
+        },
     };
     let s2 = Sphere {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
-        material: &green_mat,
+        material: &Lambertian {
+            albedo: Vec3f::new(0.8, 0.8, 0.0),
+        },
+    };
+    let s3 = Sphere {
+        center: Point3f::new(1.0, 0.0, -1.0),
+        radius: 0.5,
+        material: &Metal {
+            albedo: Vec3f::new(0.8, 0.6, 0.2),
+        },
+    };
+    let s4 = Sphere {
+        center: Point3f::new(-1.0, 0.0, -1.0),
+        radius: 0.5,
+        material: &Metal {
+            albedo: Vec3f::new(0.8, 0.8, 0.8),
+        },
     };
 
     scene.objects.push(&s1);
     scene.objects.push(&s2);
+    scene.objects.push(&s3);
+    scene.objects.push(&s4);
 
     let camera = Camera::new();
 

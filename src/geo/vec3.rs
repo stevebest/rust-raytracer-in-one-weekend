@@ -91,6 +91,23 @@ where
 }
 
 ///
+/// Vector subtraction.
+///
+impl<T> std::ops::Sub for Vec3<T>
+where
+    T: Numeric<T>,
+{
+    type Output = Vec3<T>;
+    fn sub(self, rhs: Vec3<T>) -> Self::Output {
+        Vec3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+///
 /// Vector-scalar multiplication.
 ///
 impl<T> std::ops::Mul<T> for Vec3<T>

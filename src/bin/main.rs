@@ -1,6 +1,10 @@
-use pbrt::prelude::*;
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 
+use pbrt::camera::*;
 use pbrt::geo::*;
+use pbrt::prelude::*;
 
 fn to_color(v: Vec3f) -> Vec3<u8> {
     Vec3 {
@@ -91,14 +95,9 @@ fn main() {
     let nx = 200;
     let ny = 100;
 
-    println!("P3\n{} {}\n255\n", nx, ny);
-
-    let lower_left_corner = Vec3f::new(-2.0, -1.0, -1.0);
-    let horizontal = Vec3f::new(4.0, 0.0, 0.0);
-    let vertical = Vec3f::new(0.0, 2.0, 0.0);
-    let origin = Point3f::origin();
-
-    let mut scene = Scene { objects: vec![] };
+    let mut scene = Scene {
+        objects: Vec::new(),
+    };
 
     let s1 = Sphere {
         center: Point3f::new(0.0, 0.0, -1.0),
@@ -112,17 +111,34 @@ fn main() {
     scene.objects.push(&s1);
     scene.objects.push(&s2);
 
+    let camera = Camera::new();
+
+    let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
+
     for j in (0..ny).rev() {
         for i in 0..nx {
             let u = (i as f32) / (nx as f32);
             let v = (j as f32) / (ny as f32);
 
-            let direction = lower_left_corner + horizontal * u + vertical * v;
-            let ray = Ray::new(origin, direction);
+            let ray = camera.get_ray(u, v);
 
             let color = color(&scene, &ray);
 
-            println!("{} {} {}", color.x, color.y, color.z);
+            pixels.push(color.x);
+            pixels.push(color.y);
+            pixels.push(color.z);
+            pixels.push(255);
         }
     }
+
+    let path = Path::new(r"img.png");
+    let file = File::create(path).unwrap();
+    let ref mut w = BufWriter::new(file);
+
+    let mut encoder = png::Encoder::new(w, nx as u32, ny as u32);
+    encoder.set_color(png::ColorType::RGBA);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer = encoder.write_header().unwrap();
+
+    writer.write_image_data(&pixels).unwrap();
 }

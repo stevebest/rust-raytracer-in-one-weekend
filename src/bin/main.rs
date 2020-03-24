@@ -16,11 +16,24 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
 
 fn render(scene: &Scene, ray: &Ray) -> Vec3f {
     if let Some(hit) = scene.hit(ray, 0.0, std::f32::INFINITY) {
-        (hit.n + Vec3f::new(1.0, 1.0, 1.0)) * 0.5
+        let target = hit.p + hit.n + random_in_unit_sphere();
+        render(scene, &Ray::new(hit.p, target - hit.p)) * 0.5
     } else {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
         pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
+    }
+}
+
+/// Unbiased random direction
+fn random_in_unit_sphere() -> Vec3f {
+    use rand::prelude::*;
+    let mut rng = rand::thread_rng();
+    loop {
+        let v = Vec3f::new(rng.gen(), rng.gen(), rng.gen()) * 2.0 + Vec3f::new(-1.0, -1.0, -1.0);
+        if v.len_squared() <= 1.0 {
+            return v;
+        }
     }
 }
 

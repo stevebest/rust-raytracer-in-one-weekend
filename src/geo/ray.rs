@@ -4,9 +4,9 @@ use crate::num_traits::Float;
 
 pub struct Ray {
     /// Origin of a ray.
-    pub o: Point3f,
+    o: Point3f,
     /// Direction of a ray travel.
-    pub d: Vec3f,
+    d: Vec3f,
 }
 
 impl Ray {
@@ -22,6 +22,14 @@ impl Ray {
     /// ```
     pub fn new(o: Point3f, d: Vec3f) -> Ray {
         Ray { o, d }
+    }
+
+    pub fn origin(&self) -> Point3f {
+        self.o
+    }
+
+    pub fn direction(&self) -> Vec3f {
+        self.d
     }
 
     ///

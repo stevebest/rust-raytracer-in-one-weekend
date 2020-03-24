@@ -75,3 +75,45 @@ macro_rules! impl_sqrt {
 
 impl_sqrt!(f32);
 impl_sqrt!(f64);
+
+///
+/// Zero - additive identity.
+///
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+macro_rules! impl_zero {
+    ($t:ty, $v:expr) => {
+        impl Zero for $t {
+            fn zero() -> Self {
+                $v
+            }
+        }
+    };
+}
+
+impl_zero!(f32, 0.0f32);
+impl_zero!(f64, 0.0f64);
+impl_zero!(isize, 0);
+
+///
+/// One - multiplicative identity
+///
+pub trait One {
+    fn one() -> Self;
+}
+
+macro_rules! impl_one {
+    ($t:ty, $v:expr) => {
+        impl One for $t {
+            fn one() -> Self {
+                $v
+            }
+        }
+    };
+}
+
+impl_one!(f32, 1.0f32);
+impl_one!(f64, 1.0f64);
+impl_one!(isize, 1);

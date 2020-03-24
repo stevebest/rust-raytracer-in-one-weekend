@@ -1,5 +1,5 @@
 use crate::geo::vec3::Vec3;
-use crate::num_traits::{Float, Numeric};
+use crate::num_traits::{Float, Numeric, Zero};
 
 /// A point in 3-dimensional space.
 #[derive(Copy, Clone, Debug, Default, Hash, Eq, PartialEq)]
@@ -14,6 +14,17 @@ pub type Point3f = Point3<Float>;
 impl<T> Point3<T> {
     pub fn new(x: T, y: T, z: T) -> Point3<T> {
         Point3 { x, y, z }
+    }
+
+    pub fn origin() -> Point3<T>
+    where
+        T: Zero,
+    {
+        Point3 {
+            x: T::zero(),
+            y: T::zero(),
+            z: T::zero(),
+        }
     }
 }
 

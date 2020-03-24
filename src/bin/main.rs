@@ -8,9 +8,9 @@ use pbrt::prelude::*;
 
 fn to_color(v: Vec3f) -> Vec3<u8> {
     Vec3 {
-        x: (v.x * 255.0) as u8,
-        y: (v.y * 255.0) as u8,
-        z: (v.z * 255.0) as u8,
+        x: (v.x.sqrt() * 255.0) as u8,
+        y: (v.y.sqrt() * 255.0) as u8,
+        z: (v.z.sqrt() * 255.0) as u8,
     }
 }
 

@@ -4,6 +4,7 @@ use std::path::Path;
 
 use pbrt::camera::*;
 use pbrt::geo::*;
+use pbrt::hit::{Hit, HitStruct};
 use pbrt::prelude::*;
 
 fn to_color(v: Vec3f) -> Vec3<u8> {
@@ -14,40 +15,24 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
     }
 }
 
-fn render(scene: &Scene, ray: &Ray) -> Vec3f {
+fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     if let Some(hit) = scene.hit(ray, 0.0, std::f32::INFINITY) {
-        let target = hit.p + hit.n + random_in_unit_sphere();
-        render(scene, &Ray::new(hit.p, target - hit.p)) * 0.5
+        let mut attenuation = Vec3f::new(0.0, 0.0, 0.0);
+        if let Some(scattered) = hit.material.scatter(ray, &hit, &mut attenuation) {
+            let c = render(scene, &scattered, limit - 1);
+            Vec3f::new(
+                c.x * attenuation.x,
+                c.y * attenuation.y,
+                c.z * attenuation.z,
+            )
+        } else {
+            Vec3f::new(0.0, 0.0, 0.0)
+        }
     } else {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
         pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
     }
-}
-
-/// Unbiased random direction
-fn random_in_unit_sphere() -> Vec3f {
-    use rand::prelude::*;
-    let mut rng = rand::thread_rng();
-    loop {
-        let v = Vec3f::new(rng.gen(), rng.gen(), rng.gen()) * 2.0 + Vec3f::new(-1.0, -1.0, -1.0);
-        if v.len_squared() <= 1.0 {
-            return v;
-        }
-    }
-}
-
-struct HitStruct {
-    /// Time of hit
-    pub t: Float,
-    /// Point of hit
-    pub p: Point3f,
-    /// Normal to surface
-    pub n: Vec3f,
-}
-
-trait Hit {
-    fn hit(&self, ray: &Ray, t_min: Float, t_max: Float) -> Option<HitStruct>;
 }
 
 struct Scene<'a> {
@@ -68,56 +53,36 @@ impl Hit for Scene<'_> {
     }
 }
 
-struct Sphere {
-    center: Point3f,
-    radius: Float,
-}
-
-impl Hit for Sphere {
-    fn hit(&self, ray: &Ray, t_min: Float, t_max: Float) -> Option<HitStruct> {
-        let oc = ray.origin() - self.center;
-
-        let a = ray.direction().len_squared();
-        let b = oc.dot(ray.direction());
-        let c = oc.len_squared() - self.radius * self.radius;
-        let discriminant = b * b - a * c;
-
-        if discriminant > 0.0 {
-            let t = (-b - discriminant.sqrt()) / a;
-            if t > t_min && t < t_max {
-                let p = ray.eval(t);
-                let n = (p - self.center) * self.radius.recip();
-                return Some(HitStruct { t, p, n });
-            }
-
-            let t = (-b + discriminant.sqrt()) / a;
-            if t > t_min && t < t_max {
-                let p = ray.eval(t);
-                let n = (p - self.center) * self.radius.recip();
-                return Some(HitStruct { t, p, n });
-            }
-        }
-
-        return None;
-    }
-}
-
 fn main() {
     let nx = 200; // image width, in pixels
     let ny = 100; // image height, in pixels
-    let ns = 8; // number of samples per pixel
+    let ns = 128; // number of samples per pixel
+    let n_max_bounce = 50; // max number of bounces
 
     let mut scene = Scene {
         objects: Vec::new(),
     };
 
+    use pbrt::material::lambertian::Lambertian;
+    use pbrt::shape::sphere::Sphere;
+
+    let green_mat = Lambertian {
+        albedo: Vec3f::new(0.1, 0.8, 0.2),
+    };
+
+    let red_mat = Lambertian {
+        albedo: Vec3f::new(0.9, 0.1, 0.1),
+    };
+
     let s1 = Sphere {
         center: Point3f::new(0.0, 0.0, -1.0),
         radius: 0.5,
+        material: &red_mat,
     };
     let s2 = Sphere {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
+        material: &green_mat,
     };
 
     scene.objects.push(&s1);
@@ -137,7 +102,7 @@ fn main() {
                 let u = ((i as f32) + rng.gen::<f32>()) / (nx as f32);
                 let v = ((j as f32) + rng.gen::<f32>()) / (ny as f32);
                 let ray = camera.get_ray(u, v);
-                col += render(&scene, &ray);
+                col += render(&scene, &ray, n_max_bounce);
             }
             let col = to_color(col * (ns as f32).recip());
 

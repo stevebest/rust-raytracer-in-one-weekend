@@ -35,7 +35,10 @@ fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     } else {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
-        pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
+        // pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
+        // pbrt::geo::vec3::lerp(Vec3::new(0.7, 0.2, 0.1), Vec3::new(0.5, 0.7, 1.0), t)
+        // pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0), t)
+        pbrt::geo::vec3::lerp(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0), t)
     }
 }
 
@@ -58,9 +61,10 @@ impl Hit for Scene<'_> {
 }
 
 fn main() {
-    let nx = 200; // image width, in pixels
-    let ny = 100; // image height, in pixels
-    let ns = 128; // number of samples per pixel
+    let res = 40;
+    let nx = 16 * res; // image width, in pixels
+    let ny = 9 * res; // image height, in pixels
+    let ns = 32; // number of samples per pixel
     let n_max_bounce = 50; // max number of bounces
 
     let mut scene = Scene {
@@ -72,32 +76,39 @@ fn main() {
 
     use pbrt::shape::sphere::Sphere;
 
+    // Rubber
     let s1 = Sphere {
-        center: Point3f::new(0.0, 0.0, -2.0),
+        center: Point3f::new(0.0, 0.0, -1.7),
         radius: 0.5,
         material: &Lambertian {
             albedo: Vec3f::new(0.8, 0.3, 0.3),
         },
     };
+    // Earth
     let s2 = Sphere {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
-        material: &Lambertian {
-            albedo: Vec3f::new(0.8, 0.8, 0.0),
+        material: &Metal {
+            albedo: Vec3f::new(0.5, 0.5, 0.5),
+            roughness: 0.1,
         },
     };
+    // Gold
     let s3 = Sphere {
         center: Point3f::new(1.0, 0.0, -1.0),
         radius: 0.5,
         material: &Metal {
             albedo: Vec3f::new(0.8, 0.6, 0.2),
+            roughness: 0.3,
         },
     };
+    // Silver
     let s4 = Sphere {
         center: Point3f::new(-1.0, 0.0, -1.0),
         radius: 0.5,
         material: &Metal {
             albedo: Vec3f::new(0.8, 0.8, 0.8),
+            roughness: 0.0,
         },
     };
 
@@ -106,7 +117,13 @@ fn main() {
     scene.objects.push(&s3);
     scene.objects.push(&s4);
 
-    let camera = Camera::new();
+    let camera = Camera::from_spec(CameraSpec {
+        vfov: 90.0,
+        aspect: nx as Float / ny as Float,
+        look_from: Point3f::new(1.0, 1.0, 1.0),
+        look_at: Point3f::new(0.0, 0.0, -1.0),
+        up: Vec3f::new(0.0, 1.0, 0.0),
+    });
 
     let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
 
@@ -131,7 +148,8 @@ fn main() {
         }
     }
 
-    let path = Path::new(r"img.png");
+    let filename = format!("img{}.png", 0);
+    let path = Path::new(&filename);
     let file = File::create(path).unwrap();
     let ref mut w = BufWriter::new(file);
 

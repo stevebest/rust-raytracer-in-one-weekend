@@ -16,8 +16,8 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
 }
 
 fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
-    // 0.001 prevents shadow acne
-    if let Some(hit) = scene.hit(ray, 0.001, std::f32::INFINITY) {
+    // 1.0e-4 prevents shadow acne
+    if let Some(hit) = scene.hit(ray, 1.0e-4, std::f32::INFINITY) {
         if limit == 0 {
             return Vec3f::new(0.0, 0.0, 0.0);
         }
@@ -87,20 +87,20 @@ fn main() {
     let s1 = Sphere {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
-        // material: &Metal {
-        //     albedo: Vec3f::new(0.5, 0.5, 0.5),
-        //     roughness: 0.1,
-        // },
-        material: &Lambertian {
-            albedo: Vec3f::new(0.2, 0.5, 0.2),
+        material: &Metal {
+            albedo: Vec3f::new(0.5, 0.5, 0.5),
+            roughness: 0.3,
         },
+        // material: &Lambertian {
+        //     albedo: Vec3f::new(0.3, 0.3, 0.3),
+        // },
     };
     // Rubber
     let s2 = Sphere {
-        center: Point3f::new(0.0, 0.0, -2.0),
+        center: Point3f::new(0.0, 0.0, -1.6),
         radius: 0.5,
         material: &Lambertian {
-            albedo: Vec3f::new(0.8, 0.3, 0.3),
+            albedo: Vec3f::new(0.9, 0.1, 0.1),
         },
     };
     // Gold
@@ -121,8 +121,9 @@ fn main() {
             roughness: 0.0,
         },
     };
+    // Glass
     let s5 = Sphere {
-        center: Point3f::new(0.0, 0.0, 0.0),
+        center: Point3f::new(0.0, 0.0, -0.5),
         radius: 0.5,
         material: &Dielectric {
             refraction_index: 1.33333,
@@ -139,7 +140,7 @@ fn main() {
         vfov: 60.0,
         aspect: nx as Float / ny as Float,
         // look_from: Point3f::new(1.0, 1.0, 1.0),
-        look_from: Point3f::new(1.0, 2.0, 3.0),
+        look_from: Point3f::new(1.0, 1.5, 3.0),
         look_at: Point3f::new(0.0, 0.0, -1.0),
         up: Vec3f::new(0.0, 1.0, 0.0),
     });

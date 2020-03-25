@@ -13,6 +13,17 @@ If you want to try it out, here's what you should do.
 
 Wait a few seconds and you should get a PNG file.
 
+## TODO
+
+-   General code clean up. Eliminate copy pasta and C-isms (return by writing to a parameter).
+-   Make `pbrt::prelude` more useful. Buff `Vector` and `Point` with conversions, casting and general.
+-   Command-line arguments support: render size, samples per pixel, output file name. Editing the source just to move the camera is silly.
+-   Fearless concurrency.
+-   More features: emissive materials and lights, more `Shape` types (quadrics, planes, boxes).
+-   Non-projective cameras.
+-   Transforms and animations.
+-   SIMD/GPGPU support, benchmarks.
+
 ## Credits
 
 Half of this raytracer was written under inspiration from [_Physically-Based Rendering: From Theory To Implementation_][pbr-book]. It's awesome and very well written, but you have to basically copy all of it to get any pixels on the screen.

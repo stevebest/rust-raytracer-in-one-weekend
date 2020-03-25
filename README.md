@@ -20,8 +20,10 @@ Wait a few seconds and you should get a PNG file.
 -   Command-line arguments support: render size, samples per pixel, output file name. Editing the source just to move the camera is silly.
 -   Fearless concurrency.
 -   More features: emissive materials and lights, more `Shape` types (quadrics, planes, boxes).
--   Non-projective cameras.
+-   Triangle meshes.
 -   Transforms and animations.
+-   While we're at it, why not throw in full glTF scene support?
+-   Non-projective cameras.
 -   SIMD/GPGPU support, benchmarks.
 
 ## Credits

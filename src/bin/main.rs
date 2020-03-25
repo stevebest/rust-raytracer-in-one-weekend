@@ -16,7 +16,8 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
 }
 
 fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
-    if let Some(hit) = scene.hit(ray, 0.0, std::f32::INFINITY) {
+    // 0.001 prevents shadow acne
+    if let Some(hit) = scene.hit(ray, 0.001, std::f32::INFINITY) {
         if limit == 0 {
             return Vec3f::new(0.0, 0.0, 0.0);
         }

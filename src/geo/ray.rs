@@ -17,8 +17,8 @@ impl Ray {
     /// let d = Vec3f::new(1.0, 0.0, 0.0);
     /// let r = Ray::new(o, d);
     ///
-    /// assert_eq!(r.o, o);
-    /// assert_eq!(r.d, d);
+    /// assert_eq!(r.origin(), o);
+    /// assert_eq!(r.direction(), d);
     /// ```
     pub fn new(o: Point3f, d: Vec3f) -> Ray {
         Ray { o, d }

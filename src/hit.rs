@@ -16,7 +16,32 @@ pub struct HitStruct<'a> {
     pub p: Point3f,
     /// Normal to surface
     pub n: Vec3f,
-
+    /// True if the incoming ray hit the front face of the surface
+    pub front_face: bool,
     /// Material of a surface
     pub material: &'a dyn Material,
+}
+
+impl<'a> HitStruct<'a> {
+    pub fn new(
+        t: Float,
+        p: Point3f,
+        ray: &Ray,
+        outward_normal: Vec3f,
+        material: &'a dyn Material,
+    ) -> HitStruct<'a> {
+        let front_face = ray.direction().dot(outward_normal) < 0.0;
+        let n = if front_face {
+            outward_normal
+        } else {
+            -outward_normal
+        };
+        HitStruct {
+            t,
+            p,
+            n,
+            front_face,
+            material,
+        }
+    }
 }

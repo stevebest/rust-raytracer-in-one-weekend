@@ -35,10 +35,16 @@ fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     } else {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
+
+        // Sky
         // pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
+
+        // Studio
+        pbrt::geo::vec3::lerp(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0), t)
+
         // pbrt::geo::vec3::lerp(Vec3::new(0.7, 0.2, 0.1), Vec3::new(0.5, 0.7, 1.0), t)
         // pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0), t)
-        pbrt::geo::vec3::lerp(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0), t)
+        // pbrt::geo::vec3::lerp(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.5, 0.7, 1.0), t)
     }
 }
 
@@ -64,33 +70,37 @@ fn main() {
     let res = 40;
     let nx = 16 * res; // image width, in pixels
     let ny = 9 * res; // image height, in pixels
-    let ns = 32; // number of samples per pixel
+    let ns = 8; // number of samples per pixel
     let n_max_bounce = 50; // max number of bounces
 
     let mut scene = Scene {
         objects: Vec::new(),
     };
 
+    use pbrt::material::dielectric::Dielectric;
     use pbrt::material::lambertian::Lambertian;
     use pbrt::material::metal::Metal;
 
     use pbrt::shape::sphere::Sphere;
 
-    // Rubber
+    // Earth
     let s1 = Sphere {
-        center: Point3f::new(0.0, 0.0, -1.7),
+        center: Point3f::new(0.0, -100.5, -1.0),
+        radius: 100.0,
+        // material: &Metal {
+        //     albedo: Vec3f::new(0.5, 0.5, 0.5),
+        //     roughness: 0.1,
+        // },
+        material: &Lambertian {
+            albedo: Vec3f::new(0.2, 0.5, 0.2),
+        },
+    };
+    // Rubber
+    let s2 = Sphere {
+        center: Point3f::new(0.0, 0.0, -2.0),
         radius: 0.5,
         material: &Lambertian {
             albedo: Vec3f::new(0.8, 0.3, 0.3),
-        },
-    };
-    // Earth
-    let s2 = Sphere {
-        center: Point3f::new(0.0, -100.5, -1.0),
-        radius: 100.0,
-        material: &Metal {
-            albedo: Vec3f::new(0.5, 0.5, 0.5),
-            roughness: 0.1,
         },
     };
     // Gold
@@ -111,16 +121,25 @@ fn main() {
             roughness: 0.0,
         },
     };
+    let s5 = Sphere {
+        center: Point3f::new(0.0, 0.0, 0.0),
+        radius: 0.5,
+        material: &Dielectric {
+            refraction_index: 1.33333,
+        },
+    };
 
     scene.objects.push(&s1);
     scene.objects.push(&s2);
     scene.objects.push(&s3);
     scene.objects.push(&s4);
+    scene.objects.push(&s5);
 
     let camera = Camera::from_spec(CameraSpec {
-        vfov: 90.0,
+        vfov: 60.0,
         aspect: nx as Float / ny as Float,
-        look_from: Point3f::new(1.0, 1.0, 1.0),
+        // look_from: Point3f::new(1.0, 1.0, 1.0),
+        look_from: Point3f::new(1.0, 2.0, 3.0),
         look_at: Point3f::new(0.0, 0.0, -1.0),
         up: Vec3f::new(0.0, 1.0, 0.0),
     });

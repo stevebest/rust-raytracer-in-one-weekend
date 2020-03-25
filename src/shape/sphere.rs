@@ -12,7 +12,6 @@ pub struct Sphere<'a> {
 
 impl Hit for Sphere<'_> {
     fn hit(&self, ray: &Ray, t_min: Float, t_max: Float) -> Option<HitStruct> {
-        let material = self.material;
         let oc = ray.origin() - self.center;
 
         let a = ray.direction().len_squared();
@@ -25,14 +24,14 @@ impl Hit for Sphere<'_> {
             if t > t_min && t < t_max {
                 let p = ray.eval(t);
                 let n = (p - self.center) * self.radius.recip();
-                return Some(HitStruct { t, p, n, material });
+                return Some(HitStruct::new(t, p, ray, n, self.material));
             }
 
             let t = (-b + discriminant.sqrt()) / a;
             if t > t_min && t < t_max {
                 let p = ray.eval(t);
                 let n = (p - self.center) * self.radius.recip();
-                return Some(HitStruct { t, p, n, material });
+                return Some(HitStruct::new(t, p, ray, n, self.material));
             }
         }
 

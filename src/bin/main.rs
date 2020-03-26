@@ -7,14 +7,6 @@ use pbrt::geo::*;
 use pbrt::hit::{Hit, HitStruct};
 use pbrt::prelude::*;
 
-fn to_color(v: Vec3f) -> Vec3<u8> {
-    Vec3 {
-        x: (v.x.sqrt() * 255.0) as u8,
-        y: (v.y.sqrt() * 255.0) as u8,
-        z: (v.z.sqrt() * 255.0) as u8,
-    }
-}
-
 fn tonemap(colors: &[LinearColor], pixels: &mut [u8]) {
     colors.iter().zip(pixels.chunks_mut(4)).for_each(|(c, p)| {
         p[0] = (c.r.sqrt() * 255.0) as u8;

@@ -7,12 +7,9 @@ use pbrt::geo::*;
 use pbrt::hit::{Hit, HitStruct};
 use pbrt::prelude::*;
 
-fn tonemap(colors: &[LinearColor], pixels: &mut [u8]) {
-    colors.iter().zip(pixels.chunks_mut(4)).for_each(|(c, p)| {
-        p[0] = (c.r.sqrt() * 255.0) as u8;
-        p[1] = (c.g.sqrt() * 255.0) as u8;
-        p[2] = (c.b.sqrt() * 255.0) as u8;
-        p[3] = (c.a * 255.0) as u8;
+fn tonemap(colors: &[LinearColor], pixels: &mut [Rgba<u8>]) {
+    colors.iter().zip(pixels).for_each(|(c, p)| {
+        *p = c.to_rgba();
     });
 }
 
@@ -96,7 +93,7 @@ fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [Line
 
 fn write_image(
     filename: &str,
-    pixels: &[u8],
+    pixels: &mut [Rgba<u8>],
     (nx, ny): (usize, usize),
 ) -> Result<(), std::io::Error> {
     let path = Path::new(&filename);
@@ -108,7 +105,15 @@ fn write_image(
     encoder.set_depth(png::BitDepth::Eight);
     let mut writer = encoder.write_header().unwrap();
 
-    writer.write_image_data(&pixels).unwrap();
+    let pixel_data = std::mem::ManuallyDrop::new(unsafe {
+        Vec::from_raw_parts(
+            pixels.as_mut_ptr() as *mut u8,
+            pixels.len() * 4,
+            pixels.len() * 4,
+        )
+    });
+
+    writer.write_image_data(&pixel_data).unwrap();
 
     Ok(())
 }
@@ -122,17 +127,61 @@ struct RenderOptions {
 
 #[derive(Copy, Clone, Default)]
 struct LinearColor {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
+    r: Float,
+    g: Float,
+    b: Float,
+    a: Float,
+}
+
+impl LinearColor {
+    pub fn to_rgba(&self) -> Rgba<u8> {
+        Rgba::from_channels(
+            (gamma_encode(self.r) * 255.0) as u8,
+            (gamma_encode(self.g) * 255.0) as u8,
+            (gamma_encode(self.b) * 255.0) as u8,
+            (self.a * 255.0) as u8,
+        )
+    }
+    pub fn from_rgba(rgba: Rgba<u8>) -> LinearColor {
+        LinearColor {
+            r: gamma_decode(rgba.r as f32 / 255.0),
+            g: gamma_decode(rgba.r as f32 / 255.0),
+            b: gamma_decode(rgba.r as f32 / 255.0),
+            a: rgba.a as f32 / 255.0,
+        }
+    }
+}
+
+const GAMMA: Float = 2.2;
+
+fn gamma_encode(linear: Float) -> Float {
+    linear.powf(1.0 / GAMMA)
+}
+
+fn gamma_decode(encoded: Float) -> Float {
+    encoded.powf(GAMMA)
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Default)]
+struct Rgba<T> {
+    r: T,
+    g: T,
+    b: T,
+    a: T,
+}
+
+impl<T> Rgba<T> {
+    fn from_channels(r: T, g: T, b: T, a: T) -> Rgba<T> {
+        Rgba { r, g, b, a }
+    }
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let res = 40;
+    let res = 1920 / 16;
     let nx = 16 * res; // image width, in pixels
     let ny = 9 * res; // image height, in pixels
-    let ns = 8; // number of samples per pixel
+    let ns = 128; // number of samples per pixel
     let n_max_bounce = 50; // max number of bounces
 
     let mut scene = Scene {
@@ -218,12 +267,12 @@ fn main() -> Result<(), std::io::Error> {
     colors.resize_with(nx * ny, Default::default);
     render(&scene, &camera, options, &mut colors);
 
-    let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
-    pixels.resize_with(nx * ny * 4, Default::default);
+    let mut pixels = Vec::<Rgba<u8>>::with_capacity(nx * ny);
+    pixels.resize_with(nx * ny, Default::default);
     tonemap(&colors, &mut pixels);
 
     let filename = format!("img{}.png", 0);
-    write_image(&filename, &pixels, (nx, ny))?;
+    write_image(&filename, &mut pixels, (nx, ny))?;
 
     Ok(())
 }

@@ -15,6 +15,15 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
     }
 }
 
+fn tonemap(colors: &[LinearColor], pixels: &mut [u8]) {
+    colors.iter().zip(pixels.chunks_mut(4)).for_each(|(c, p)| {
+        p[0] = (c.r.sqrt() * 255.0) as u8;
+        p[1] = (c.g.sqrt() * 255.0) as u8;
+        p[2] = (c.b.sqrt() * 255.0) as u8;
+        p[3] = (c.a * 255.0) as u8;
+    });
+}
+
 fn ray_color(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     // 1.0e-4 prevents shadow acne
     if let Some(hit) = scene.hit(ray, 1.0e-4, std::f32::INFINITY) {
@@ -66,7 +75,7 @@ impl Hit for Scene<'_> {
     }
 }
 
-fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [u8]) {
+fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [LinearColor]) {
     use rand::prelude::*;
     let mut rng = rand::thread_rng();
 
@@ -80,15 +89,15 @@ fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [u8])
                 col += ray_color(&scene, &ray, opt.n_max_bounce);
             }
 
-            // Tonemapping
-            let col = to_color(col * (opt.ns as f32).recip());
+            col = col * (1.0 / opt.ns as f32);
 
-            let j = (opt.ny - j - 1) * 4;
-            let i = i * 4;
-            pixels[j * opt.nx + i + 0] = col.x;
-            pixels[j * opt.nx + i + 1] = col.y;
-            pixels[j * opt.nx + i + 2] = col.z;
-            pixels[j * opt.nx + i + 3] = 255;
+            let j = opt.ny - j - 1;
+            pixels[j * opt.nx + i] = LinearColor {
+                r: col.x,
+                g: col.y,
+                b: col.z,
+                a: 1.0,
+            };
         }
     }
 }
@@ -117,6 +126,14 @@ struct RenderOptions {
     ny: usize,
     ns: usize,
     n_max_bounce: usize,
+}
+
+#[derive(Copy, Clone, Default)]
+struct LinearColor {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
 }
 
 fn main() -> Result<(), std::io::Error> {
@@ -205,10 +222,13 @@ fn main() -> Result<(), std::io::Error> {
         n_max_bounce,
     };
 
-    let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
-    pixels.resize(nx * ny * 4, 0);
+    let mut colors = Vec::<LinearColor>::with_capacity(nx * ny);
+    colors.resize_with(nx * ny, Default::default);
+    render(&scene, &camera, options, &mut colors);
 
-    render(&scene, &camera, options, &mut pixels);
+    let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
+    pixels.resize_with(nx * ny * 4, Default::default);
+    tonemap(&colors, &mut pixels);
 
     let filename = format!("img{}.png", 0);
     write_image(&filename, &pixels, (nx, ny))?;

@@ -15,7 +15,7 @@ fn to_color(v: Vec3f) -> Vec3<u8> {
     }
 }
 
-fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
+fn ray_color(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     // 1.0e-4 prevents shadow acne
     if let Some(hit) = scene.hit(ray, 1.0e-4, std::f32::INFINITY) {
         if limit == 0 {
@@ -23,7 +23,7 @@ fn render(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
         }
         let mut attenuation = Vec3f::new(0.0, 0.0, 0.0);
         if let Some(scattered) = hit.material.scatter(ray, &hit, &mut attenuation) {
-            let c = render(scene, &scattered, limit - 1);
+            let c = ray_color(scene, &scattered, limit - 1);
             Vec3f::new(
                 c.x * attenuation.x,
                 c.y * attenuation.y,
@@ -86,6 +86,8 @@ fn write_image(
 }
 
 fn main() -> Result<(), std::io::Error> {
+    println!("{}", std::env::args().collect::<Vec<_>>()[0]);
+
     let res = 40;
     let nx = 16 * res; // image width, in pixels
     let ny = 9 * res; // image height, in pixels
@@ -176,7 +178,7 @@ fn main() -> Result<(), std::io::Error> {
                 let u = ((i as f32) + rng.gen::<f32>()) / (nx as f32);
                 let v = ((j as f32) + rng.gen::<f32>()) / (ny as f32);
                 let ray = camera.get_ray(u, v);
-                col += render(&scene, &ray, n_max_bounce);
+                col += ray_color(&scene, &ray, n_max_bounce);
             }
             let col = to_color(col * (ns as f32).recip());
 

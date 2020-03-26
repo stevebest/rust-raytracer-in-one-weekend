@@ -20,18 +20,18 @@ fn ray_color(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
     // 1.0e-4 prevents shadow acne
     if let Some(hit) = scene.hit(ray, 1.0e-4, std::f32::INFINITY) {
         if limit == 0 {
-            return Vec3f::new(0.0, 0.0, 0.0);
+            return vec3(0.0, 0.0, 0.0);
         }
-        let mut attenuation = Vec3f::new(0.0, 0.0, 0.0);
+        let mut attenuation = vec3(0.0, 0.0, 0.0);
         if let Some(scattered) = hit.material.scatter(ray, &hit, &mut attenuation) {
             let c = ray_color(scene, &scattered, limit - 1);
-            Vec3f::new(
+            vec3(
                 c.x * attenuation.x,
                 c.y * attenuation.y,
                 c.z * attenuation.z,
             )
         } else {
-            Vec3f::new(0.0, 0.0, 0.0)
+            vec3(0.0, 0.0, 0.0)
         }
     } else {
         let unit = ray.direction().normalized();
@@ -73,7 +73,7 @@ fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [Line
 
     for j in (0..opt.ny).rev() {
         for i in 0..opt.nx {
-            let mut col = Vec3f::new(0.0, 0.0, 0.0);
+            let mut col = vec3(0.0, 0.0, 0.0);
             for _ in 0..opt.ns {
                 let u = ((i as f32) + rng.gen::<f32>()) / (opt.nx as f32);
                 let v = ((j as f32) + rng.gen::<f32>()) / (opt.ny as f32);
@@ -150,11 +150,11 @@ fn main() -> Result<(), std::io::Error> {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
         material: &Metal {
-            albedo: Vec3f::new(0.5, 0.5, 0.5),
+            albedo: vec3(0.5, 0.5, 0.5),
             roughness: 0.3,
         },
         // material: &Lambertian {
-        //     albedo: Vec3f::new(0.3, 0.3, 0.3),
+        //     albedo: vec3(0.3, 0.3, 0.3),
         // },
     };
     // Rubber
@@ -162,7 +162,7 @@ fn main() -> Result<(), std::io::Error> {
         center: Point3f::new(0.0, 0.0, -1.6),
         radius: 0.5,
         material: &Lambertian {
-            albedo: Vec3f::new(0.9, 0.1, 0.1),
+            albedo: vec3(0.9, 0.1, 0.1),
         },
     };
     // Gold
@@ -170,7 +170,7 @@ fn main() -> Result<(), std::io::Error> {
         center: Point3f::new(1.0, 0.0, -1.0),
         radius: 0.5,
         material: &Metal {
-            albedo: Vec3f::new(0.8, 0.6, 0.2),
+            albedo: vec3(0.8, 0.6, 0.2),
             roughness: 0.3,
         },
     };
@@ -179,7 +179,7 @@ fn main() -> Result<(), std::io::Error> {
         center: Point3f::new(-1.0, 0.0, -1.0),
         radius: 0.5,
         material: &Metal {
-            albedo: Vec3f::new(0.8, 0.8, 0.8),
+            albedo: vec3(0.8, 0.8, 0.8),
             roughness: 0.0,
         },
     };
@@ -204,7 +204,7 @@ fn main() -> Result<(), std::io::Error> {
         // look_from: Point3f::new(1.0, 1.0, 1.0),
         look_from: Point3f::new(1.0, 1.5, 3.0),
         look_at: Point3f::new(0.0, 0.0, -1.0),
-        up: Vec3f::new(0.0, 1.0, 0.0),
+        up: vec3(0.0, 1.0, 0.0),
     });
 
     let options = RenderOptions {

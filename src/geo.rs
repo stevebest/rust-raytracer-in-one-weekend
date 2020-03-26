@@ -21,6 +21,11 @@ pub use ray::Ray;
 
 use crate::num_traits::Float;
 
+/// Creates a new 3D vector.
+pub fn vec3<T>(x: T, y: T, z: T) -> Vec3<T> {
+    Vec3::new(x, y, z)
+}
+
 ///
 /// Linearly interpolates between two values.
 ///

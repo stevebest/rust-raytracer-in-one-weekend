@@ -66,6 +66,33 @@ impl Hit for Scene<'_> {
     }
 }
 
+fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [u8]) {
+    use rand::prelude::*;
+    let mut rng = rand::thread_rng();
+
+    for j in (0..opt.ny).rev() {
+        for i in 0..opt.nx {
+            let mut col = Vec3f::new(0.0, 0.0, 0.0);
+            for _ in 0..opt.ns {
+                let u = ((i as f32) + rng.gen::<f32>()) / (opt.nx as f32);
+                let v = ((j as f32) + rng.gen::<f32>()) / (opt.ny as f32);
+                let ray = camera.get_ray(u, v);
+                col += ray_color(&scene, &ray, opt.n_max_bounce);
+            }
+
+            // Tonemapping
+            let col = to_color(col * (opt.ns as f32).recip());
+
+            let j = (opt.ny - j - 1) * 4;
+            let i = i * 4;
+            pixels[j * opt.nx + i + 0] = col.x;
+            pixels[j * opt.nx + i + 1] = col.y;
+            pixels[j * opt.nx + i + 2] = col.z;
+            pixels[j * opt.nx + i + 3] = 255;
+        }
+    }
+}
+
 fn write_image(
     filename: &str,
     pixels: &[u8],
@@ -85,9 +112,14 @@ fn write_image(
     Ok(())
 }
 
-fn main() -> Result<(), std::io::Error> {
-    println!("{}", std::env::args().collect::<Vec<_>>()[0]);
+struct RenderOptions {
+    nx: usize,
+    ny: usize,
+    ns: usize,
+    n_max_bounce: usize,
+}
 
+fn main() -> Result<(), std::io::Error> {
     let res = 40;
     let nx = 16 * res; // image width, in pixels
     let ny = 9 * res; // image height, in pixels
@@ -166,28 +198,17 @@ fn main() -> Result<(), std::io::Error> {
         up: Vec3f::new(0.0, 1.0, 0.0),
     });
 
+    let options = RenderOptions {
+        nx,
+        ny,
+        ns,
+        n_max_bounce,
+    };
+
     let mut pixels = Vec::<u8>::with_capacity(nx * ny * 4);
+    pixels.resize(nx * ny * 4, 0);
 
-    use rand::prelude::*;
-    let mut rng = rand::thread_rng();
-
-    for j in (0..ny).rev() {
-        for i in 0..nx {
-            let mut col = Vec3f::new(0.0, 0.0, 0.0);
-            for _ in 0..ns {
-                let u = ((i as f32) + rng.gen::<f32>()) / (nx as f32);
-                let v = ((j as f32) + rng.gen::<f32>()) / (ny as f32);
-                let ray = camera.get_ray(u, v);
-                col += ray_color(&scene, &ray, n_max_bounce);
-            }
-            let col = to_color(col * (ns as f32).recip());
-
-            pixels.push(col.x);
-            pixels.push(col.y);
-            pixels.push(col.z);
-            pixels.push(255);
-        }
-    }
+    render(&scene, &camera, options, &mut pixels);
 
     let filename = format!("img{}.png", 0);
     write_image(&filename, &pixels, (nx, ny))?;

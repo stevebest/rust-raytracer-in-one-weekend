@@ -66,7 +66,26 @@ impl Hit for Scene<'_> {
     }
 }
 
-fn main() {
+fn write_image(
+    filename: &str,
+    pixels: &[u8],
+    (nx, ny): (usize, usize),
+) -> Result<(), std::io::Error> {
+    let path = Path::new(&filename);
+    let file = File::create(path).unwrap();
+    let ref mut w = BufWriter::new(file);
+
+    let mut encoder = png::Encoder::new(w, nx as u32, ny as u32);
+    encoder.set_color(png::ColorType::RGBA);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer = encoder.write_header().unwrap();
+
+    writer.write_image_data(&pixels).unwrap();
+
+    Ok(())
+}
+
+fn main() -> Result<(), std::io::Error> {
     let res = 40;
     let nx = 16 * res; // image width, in pixels
     let ny = 9 * res; // image height, in pixels
@@ -169,14 +188,7 @@ fn main() {
     }
 
     let filename = format!("img{}.png", 0);
-    let path = Path::new(&filename);
-    let file = File::create(path).unwrap();
-    let ref mut w = BufWriter::new(file);
+    write_image(&filename, &pixels, (nx, ny))?;
 
-    let mut encoder = png::Encoder::new(w, nx as u32, ny as u32);
-    encoder.set_color(png::ColorType::RGBA);
-    encoder.set_depth(png::BitDepth::Eight);
-    let mut writer = encoder.write_header().unwrap();
-
-    writer.write_image_data(&pixels).unwrap();
+    Ok(())
 }

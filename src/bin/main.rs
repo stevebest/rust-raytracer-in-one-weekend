@@ -125,6 +125,34 @@ struct RenderOptions {
     n_max_bounce: usize,
 }
 
+impl RenderOptions {
+    fn from_args(args: Vec<String>) -> RenderOptions {
+        fn arg<T: std::str::FromStr>(arg: Option<&String>, default: T) -> T {
+            arg.unwrap_or(&"".into()).parse::<T>().unwrap_or(default)
+        }
+
+        let default = RenderOptions::default();
+
+        RenderOptions {
+            nx: arg(args.get(1), default.nx),
+            ny: arg(args.get(2), default.ny),
+            ns: arg(args.get(3), default.ns),
+            n_max_bounce: 50,
+        }
+    }
+}
+
+impl Default for RenderOptions {
+    fn default() -> RenderOptions {
+        RenderOptions {
+            nx: 40 * 16,
+            ny: 40 * 9,
+            ns: 8,
+            n_max_bounce: 50,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Default)]
 struct LinearColor {
     r: Float,
@@ -178,11 +206,14 @@ impl<T> Rgba<T> {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let res = 1920 / 16;
-    let nx = 16 * res; // image width, in pixels
-    let ny = 9 * res; // image height, in pixels
-    let ns = 128; // number of samples per pixel
-    let n_max_bounce = 50; // max number of bounces
+    let args: Vec<_> = std::env::args().collect();
+
+    let render_options = RenderOptions::from_args(args);
+
+    println!(
+        "Rendering {}x{} at {} samples per pixels",
+        render_options.nx, render_options.ny, render_options.ns
+    );
 
     let mut scene = Scene {
         objects: Vec::new(),
@@ -249,23 +280,18 @@ fn main() -> Result<(), std::io::Error> {
 
     let camera = Camera::from_spec(CameraSpec {
         vfov: 60.0,
-        aspect: nx as Float / ny as Float,
+        aspect: render_options.nx as Float / render_options.ny as Float,
         // look_from: Point3f::new(1.0, 1.0, 1.0),
         look_from: Point3f::new(1.0, 1.5, 3.0),
         look_at: Point3f::new(0.0, 0.0, -1.0),
         up: vec3(0.0, 1.0, 0.0),
     });
 
-    let options = RenderOptions {
-        nx,
-        ny,
-        ns,
-        n_max_bounce,
-    };
+    let RenderOptions { nx, ny, .. } = render_options;
 
     let mut colors = Vec::<LinearColor>::with_capacity(nx * ny);
     colors.resize_with(nx * ny, Default::default);
-    render(&scene, &camera, options, &mut colors);
+    render(&scene, &camera, render_options, &mut colors);
 
     let mut pixels = Vec::<Rgba<u8>>::with_capacity(nx * ny);
     pixels.resize_with(nx * ny, Default::default);

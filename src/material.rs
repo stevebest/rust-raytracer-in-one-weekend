@@ -5,6 +5,6 @@ pub mod metal;
 use crate::geo::{Ray, Vec3f};
 use crate::hit::HitStruct;
 
-pub trait Material {
+pub trait Material: std::marker::Sync {
     fn scatter(&self, ray: &Ray, hit: &HitStruct, attenuation: &mut Vec3f) -> Option<Ray>;
 }

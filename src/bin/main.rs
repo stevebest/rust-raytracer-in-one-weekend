@@ -64,31 +64,36 @@ impl Hit for Scene<'_> {
     }
 }
 
-fn render(scene: &Scene, camera: &Camera, opt: RenderOptions, pixels: &mut [LinearColor]) {
+fn render(scene: &Scene, camera: &Camera, opt: RenderOptions) -> Vec<LinearColor> {
     use rand::prelude::*;
-    let mut rng = rand::thread_rng();
+    use rayon::prelude::*;
 
-    for j in (0..opt.ny).rev() {
-        for i in 0..opt.nx {
-            let mut col = vec3(0.0, 0.0, 0.0);
-            for _ in 0..opt.ns {
-                let u = ((i as f32) + rng.gen::<f32>()) / (opt.nx as f32);
-                let v = ((j as f32) + rng.gen::<f32>()) / (opt.ny as f32);
-                let ray = camera.get_ray(u, v);
-                col += ray_color(&scene, &ray, opt.n_max_bounce);
-            }
+    let pixels = (0..opt.ny)
+        .rev()
+        .map(|j| {
+            let row: Vec<_> = (0..opt.nx)
+                .into_par_iter()
+                .map(|i| {
+                    let mut rng = rand::thread_rng();
+                    let mut rgb = vec3(0.0, 0.0, 0.0);
+                    for _ in 0..opt.ns {
+                        let u = ((i as f32) + rng.gen::<f32>()) / (opt.nx as f32);
+                        let v = ((j as f32) + rng.gen::<f32>()) / (opt.ny as f32);
+                        let ray = camera.get_ray(u, v);
+                        rgb += ray_color(&scene, &ray, opt.n_max_bounce);
+                    }
+                    rgb = rgb * (1.0 / opt.ns as f32);
 
-            col = col * (1.0 / opt.ns as f32);
+                    LinearColor::from_channels(rgb.x, rgb.y, rgb.z, 1.0)
+                })
+                .collect();
 
-            let j = opt.ny - j - 1;
-            pixels[j * opt.nx + i] = LinearColor {
-                r: col.x,
-                g: col.y,
-                b: col.z,
-                a: 1.0,
-            };
-        }
-    }
+            row
+        })
+        .collect::<Vec<_>>()
+        .concat();
+
+    pixels
 }
 
 fn write_image(
@@ -118,6 +123,7 @@ fn write_image(
     Ok(())
 }
 
+#[derive(Copy, Clone)]
 struct RenderOptions {
     nx: usize,
     ny: usize,
@@ -153,7 +159,7 @@ impl Default for RenderOptions {
     }
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 struct LinearColor {
     r: Float,
     g: Float,
@@ -162,6 +168,9 @@ struct LinearColor {
 }
 
 impl LinearColor {
+    pub fn from_channels(r: Float, g: Float, b: Float, a: Float) -> LinearColor {
+        LinearColor { r, g, b, a }
+    }
     pub fn to_rgba(&self) -> Rgba<u8> {
         Rgba::from_channels(
             (gamma_encode(self.r) * 255.0) as u8,
@@ -289,9 +298,7 @@ fn main() -> Result<(), std::io::Error> {
 
     let RenderOptions { nx, ny, .. } = render_options;
 
-    let mut colors = Vec::<LinearColor>::with_capacity(nx * ny);
-    colors.resize_with(nx * ny, Default::default);
-    render(&scene, &camera, render_options, &mut colors);
+    let colors = render(&scene, &camera, render_options);
 
     let mut pixels = Vec::<Rgba<u8>>::with_capacity(nx * ny);
     pixels.resize_with(nx * ny, Default::default);

@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 png = "0.16"
 rand = "0.7"
+rayon = "1.3"
 
 [lib]
 name = "pbrt"

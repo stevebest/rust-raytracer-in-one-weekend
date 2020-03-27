@@ -4,7 +4,7 @@ use crate::geo::{Point3f, Ray, Vec3f};
 use crate::material::Material;
 
 // TODO: This should be called a Surface, or something. RTiaW calls it `hitable`.
-pub trait Hit {
+pub trait Hit: std::marker::Sync {
     fn hit(&self, ray: &Ray, t_min: Float, t_max: Float) -> Option<HitStruct>;
 }
 

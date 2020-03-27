@@ -69,6 +69,7 @@ fn render(scene: &Scene, camera: &Camera, opt: RenderOptions) -> Vec<LinearColor
     use rayon::prelude::*;
 
     let pixels = (0..opt.ny)
+        .into_par_iter()
         .rev()
         .map(|j| {
             let row: Vec<_> = (0..opt.nx)

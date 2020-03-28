@@ -8,43 +8,58 @@ use pbrt::geo::*;
 use pbrt::hit::{Hit, HitStruct};
 use pbrt::prelude::*;
 
-fn tonemap(colors: &[LinearColor], pixels: &mut [Rgba<u8>]) {
-    colors.iter().zip(pixels).for_each(|(c, p)| {
+fn tonemap(colors: &[LinearColor], (nx, ny): (usize, usize)) -> Vec<Rgba<u8>> {
+    let mut pixels = Vec::<Rgba<u8>>::with_capacity(nx * ny);
+    pixels.resize_with(nx * ny, Default::default);
+    colors.iter().zip(pixels.iter_mut()).for_each(|(c, p)| {
         *p = c.to_rgba();
     });
+    pixels
 }
 
-fn ray_color(scene: &Scene, ray: &Ray, limit: usize) -> Vec3f {
+fn ray_color(scene: &Scene, ray: &Ray, limit: usize) -> LinearColor {
     // 1.0e-4 prevents shadow acne
     if let Some(hit) = scene.hit(ray, 1.0e-4, std::f32::INFINITY) {
         if limit == 0 {
-            return vec3(0.0, 0.0, 0.0);
+            return Default::default();
         }
         let mut attenuation = vec3(0.0, 0.0, 0.0);
         if let Some(scattered) = hit.material.scatter(ray, &hit, &mut attenuation) {
             let c = ray_color(scene, &scattered, limit - 1);
-            vec3(
-                c.x * attenuation.x,
-                c.y * attenuation.y,
-                c.z * attenuation.z,
+            LinearColor::from_channels(
+                c.r * attenuation.x,
+                c.g * attenuation.y,
+                c.b * attenuation.z,
+                1.0,
             )
         } else {
-            vec3(0.0, 0.0, 0.0)
+            Default::default()
         }
     } else {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
 
         // Sky
-        // pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.5, 0.7, 1.0), t)
+        // lerp(t, LinearColor::from_channels(1.0, 1.0, 1.0, 1.0), LinearColor::from_channels(0.5, 0.7, 1.0, 1.0))
 
         // Studio
-        pbrt::geo::vec3::lerp(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0), t)
+        lerp(
+            t,
+            LinearColor::from_channels(0.0, 0.0, 0.0, 0.0),
+            LinearColor::from_channels(1.0, 1.0, 1.0, 0.0),
+        )
 
-        // pbrt::geo::vec3::lerp(Vec3::new(0.7, 0.2, 0.1), Vec3::new(0.5, 0.7, 1.0), t)
-        // pbrt::geo::vec3::lerp(Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0), t)
-        // pbrt::geo::vec3::lerp(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.5, 0.7, 1.0), t)
+        // lerp(t, LinearColor::from_channels(0.7, 0.2, 0.1, 1.0), LinearColor::from_channels(0.5, 0.7, 1.0, 1.0))
+        // lerp(t, LinearColor::from_channels(1.0, 1.0, 1.0, 1.0), LinearColor::from_channels(0.0, 0.0, 0.0, 1.0))
+        // lerp(t, LinearColor::from_channels(0.0, 0.0, 0.0, 1.0), LinearColor::from_channels(0.5, 0.7, 1.0, 1.0))
     }
+}
+
+fn lerp<T>(t: Float, a: T, b: T) -> T
+where
+    T: std::ops::Mul<Float, Output = T> + std::ops::Add<Output = T>,
+{
+    a * (1.0 - t) + b * t
 }
 
 struct Scene<'a> {
@@ -77,16 +92,16 @@ fn render(scene: &Scene, camera: &Camera, opt: RenderOptions) -> Vec<LinearColor
                 .into_par_iter()
                 .map(|i| {
                     let mut rng = rand::thread_rng();
-                    let mut rgb = vec3(0.0, 0.0, 0.0);
+                    let mut color = LinearColor::default();
                     for _ in 0..opt.ns {
                         let u = ((i as f32) + rng.gen::<f32>()) / (opt.nx as f32);
                         let v = ((j as f32) + rng.gen::<f32>()) / (opt.ny as f32);
                         let ray = camera.get_ray(u, v);
-                        rgb += ray_color(&scene, &ray, opt.n_max_bounce);
+                        color = color + ray_color(&scene, &ray, opt.n_max_bounce);
                     }
-                    rgb = rgb * (1.0 / opt.ns as f32);
+                    color = color * (1.0 / opt.ns as f32);
 
-                    LinearColor::from_channels(rgb.x, rgb.y, rgb.z, 1.0)
+                    color
                 })
                 .collect();
 
@@ -134,6 +149,9 @@ struct RenderOptions {
 }
 
 impl RenderOptions {
+    fn parse() -> RenderOptions {
+        RenderOptions::from_args(std::env::args().collect())
+    }
     fn from_args(args: Vec<String>) -> RenderOptions {
         fn arg<T: std::str::FromStr>(arg: Option<&String>, default: T) -> T {
             arg.unwrap_or(&"".into()).parse::<T>().unwrap_or(default)
@@ -162,9 +180,7 @@ impl Default for RenderOptions {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let args: Vec<_> = std::env::args().collect();
-
-    let render_options = RenderOptions::from_args(args);
+    let render_options = RenderOptions::parse();
 
     println!(
         "Rendering {}x{} at {} samples per pixels",
@@ -247,9 +263,7 @@ fn main() -> Result<(), std::io::Error> {
 
     let colors = render(&scene, &camera, render_options);
 
-    let mut pixels = Vec::<Rgba<u8>>::with_capacity(nx * ny);
-    pixels.resize_with(nx * ny, Default::default);
-    tonemap(&colors, &mut pixels);
+    let mut pixels = tonemap(&colors, (nx, ny));
 
     let filename = format!("img{}.png", 0);
     write_image(&filename, &mut pixels, (nx, ny))?;

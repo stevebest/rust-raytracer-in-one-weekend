@@ -6,6 +6,7 @@ use pbrt::camera::*;
 use pbrt::color::*;
 use pbrt::geo::*;
 use pbrt::hit::{Hit, HitStruct};
+use pbrt::material::*;
 use pbrt::prelude::*;
 
 fn tonemap(colors: &[LinearColor], (nx, ny): (usize, usize)) -> Vec<Rgba<u8>> {
@@ -190,10 +191,6 @@ fn main() -> Result<(), std::io::Error> {
     let mut scene = Scene {
         objects: Vec::new(),
     };
-
-    use pbrt::material::dielectric::Dielectric;
-    use pbrt::material::lambertian::Lambertian;
-    use pbrt::material::metal::Metal;
 
     use pbrt::shape::sphere::Sphere;
 

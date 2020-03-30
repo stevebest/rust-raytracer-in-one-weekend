@@ -31,8 +31,8 @@ impl Camera {
         let origin = spec.look_from;
 
         let w = (spec.look_from - spec.look_at).normalized();
-        let u = cross(spec.up, w).normalized();
-        let v = cross(w, u);
+        let u = Vec3f::cross(&spec.up, &w).normalized();
+        let v = Vec3f::cross(&w, &u);
 
         let theta = degrees_to_radians(spec.vfov);
         let half_height = (theta / 2.0).tan();
@@ -59,33 +59,4 @@ impl Camera {
 
 fn degrees_to_radians(degrees: Float) -> Float {
     degrees / 360.0 * std::f32::consts::PI
-}
-
-pub fn cross(u: Vec3f, v: Vec3f) -> Vec3f {
-    Vec3f {
-        x: u.y * v.z - u.z * v.y,
-        y: u.z * v.x - u.x * v.z,
-        z: u.x * v.y - u.y * v.x,
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::cross;
-    use crate::geo::*;
-
-    #[test]
-    fn test_cross() {
-        let u = Vec3f::new(1.0, 0.0, 0.0);
-        let v = Vec3f::new(0.0, 1.0, 0.0);
-        let w = Vec3f::new(0.0, 0.0, 1.0);
-
-        assert_eq!(cross(u, v), w);
-        assert_eq!(cross(v, u), -w);
-        assert_eq!(cross(v, w), u);
-        assert_eq!(cross(w, v), -u);
-        assert_eq!(cross(w, u), v);
-        assert_eq!(cross(u, w), -v);
-    }
 }

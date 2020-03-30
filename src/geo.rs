@@ -19,11 +19,61 @@ pub use mat4::Mat4;
 
 pub use ray::Ray;
 
-use crate::num_traits::Float;
+use crate::num_traits::*;
 
 /// Creates a new 3D vector.
 pub fn vec3<T>(x: T, y: T, z: T) -> Vec3<T> {
     Vec3::new(x, y, z)
+}
+
+impl<T> From<(T, T, T)> for Vec3<T>
+where
+    T: Numeric<T>,
+{
+    fn from((x, y, z): (T, T, T)) -> Self {
+        vec3(x, y, z)
+    }
+}
+
+impl<T> From<[T; 3]> for Vec3<T>
+where
+    T: Numeric<T>,
+{
+    fn from([x, y, z]: [T; 3]) -> Self {
+        vec3(x, y, z)
+    }
+}
+
+/// Creates a new 3D point.
+pub fn point3<T>(x: T, y: T, z: T) -> Point3<T> {
+    Point3::new(x, y, z)
+}
+
+impl<T> From<Vec3<T>> for Point3<T>
+where
+    T: Numeric<T>,
+{
+    fn from(Vec3 { x, y, z }: Vec3<T>) -> Self {
+        point3(x, y, z)
+    }
+}
+
+impl<T> From<(T, T, T)> for Point3<T>
+where
+    T: Numeric<T>,
+{
+    fn from((x, y, z): (T, T, T)) -> Self {
+        point3(x, y, z)
+    }
+}
+
+impl<T> From<[T; 3]> for Point3<T>
+where
+    T: Numeric<T>,
+{
+    fn from([x, y, z]: [T; 3]) -> Self {
+        point3(x, y, z)
+    }
 }
 
 ///

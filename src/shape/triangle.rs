@@ -1,20 +1,56 @@
 use crate::prelude::*;
 
 use crate::geo::*;
+use crate::hit::*;
+use crate::material::Material;
+// use crate::shape::Shape;
 
-use crate::shape::Shape;
-
-pub struct Triangle {
-    positions: [Point3f; 3],
+pub struct Triangle<'a> {
+    pub positions: [Point3f; 3],
+    pub material: &'a dyn Material,
 }
 
-impl Triangle {
-    pub fn intersection(&self, ray: &Ray) -> Option<Point3f> {
+impl Hit for Triangle<'_> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitStruct<'_>> {
+        if let Some(intersection) = self.intersection(ray) {
+            let Intersection { p, t, n, uv: _, .. } = intersection;
+            if t > t_min && t < t_max {
+                Some(HitStruct {
+                    t,
+                    p,
+                    n,
+                    /// True if the incoming ray hit the front face of the surface
+                    front_face: ray.direction().dot(n) < 0.0,
+                    /// Material of a surface
+                    material: self.material,
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+impl Triangle<'_> {
+    fn intersection(&self, ray: &Ray) -> Option<Intersection> {
         moller_trumbore(ray, self)
     }
 }
 
-fn moller_trumbore(ray: &Ray, triangle: &Triangle) -> Option<Point3f> {
+struct Intersection {
+    /// Point of intersection.
+    p: Point3f,
+    /// Normal at the point of intersection.
+    n: Vec3f,
+    /// Time of intersection.
+    t: Float,
+    /// UV coordinates.
+    uv: (Float, Float),
+}
+
+fn moller_trumbore(ray: &Ray, triangle: &Triangle) -> Option<Intersection> {
     let [v0, v1, v2] = triangle.positions;
     let e1 = v1 - v0;
     let e2 = v2 - v0;
@@ -43,34 +79,44 @@ fn moller_trumbore(ray: &Ray, triangle: &Triangle) -> Option<Point3f> {
 
     let t = f * e2.dot(q);
     if t > EPSILON {
-        // Some(ray.origin() + ray.direction() * t)
-        Some(v0 + (e1 * u + e2 * v))
+        // let p = Some(ray.origin() + ray.direction() * t)
+        let p = v0 + (e1 * u + e2 * v);
+        let n = e1.cross(&e2).normalized();
+        Some(Intersection {
+            p,
+            t,
+            n,
+            uv: (u, v),
+        })
     } else {
         None
     }
 }
 
-impl Shape for Triangle {}
-
 #[cfg(test)]
 mod test {
 
     use super::*;
-    use crate::geo::*;
+    use crate::material::null::NullMaterial;
 
     #[test]
     fn triangle_ray_intersection() {
         let t = Triangle {
             positions: [
+                point3(0.0, 0.0, 0.0),
                 point3(1.0, 0.0, 0.0),
                 point3(0.0, 1.0, 0.0),
-                point3(0.0, 0.0, 0.0),
             ],
+            material: &NullMaterial,
         };
 
         let r = Ray::new(point3(0.0, 0.0, 1.0), vec3(1.0, 2.0, -3.0));
+        let i = t.intersection(&r);
         assert!(t.intersection(&r).is_some());
-        assert!((t.intersection(&r).unwrap() - point3(1.0 / 3.0, 2.0 / 3.0, 0.0)).len() < EPSILON);
+        let i = i.unwrap();
+        assert!((i.p - point3(1.0 / 3.0, 2.0 / 3.0, 0.0)).len() < EPSILON);
+        assert_eq!(i.n, vec3(0.0, 0.0, 1.0));
+        assert!(r.direction().dot(i.n) < 0.0);
 
         let r = Ray::new(point3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 3.0));
         assert!(t.intersection(&r).is_none());

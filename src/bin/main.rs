@@ -161,10 +161,10 @@ impl RenderOptions {
         let default = RenderOptions::default();
 
         RenderOptions {
-            nx: arg(args.get(1), default.nx),
-            ny: arg(args.get(2), default.ny),
-            ns: arg(args.get(3), default.ns),
-            n_max_bounce: 50,
+            ns: arg(args.get(1), default.ns),
+            nx: arg(args.get(2), default.nx),
+            ny: arg(args.get(3), default.ny),
+            n_max_bounce: default.n_max_bounce,
         }
     }
 }
@@ -193,66 +193,157 @@ fn main() -> Result<(), std::io::Error> {
     };
 
     use pbrt::shape::sphere::Sphere;
+    use pbrt::shape::triangle::Triangle;
 
     // Earth
-    let s1 = Sphere {
+    let ground = Sphere {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
         material: &Metal {
             albedo: vec3(0.5, 0.5, 0.5),
-            roughness: 0.3,
+            roughness: 0.0,
         },
         // material: &Lambertian {
         //     albedo: vec3(0.3, 0.3, 0.3),
         // },
     };
     // Rubber
-    let s2 = Sphere {
-        center: Point3f::new(0.0, 0.0, -1.6),
+    let s_pos_x = Sphere {
+        center: Point3f::new(1.1, 0.0, 0.0),
         radius: 0.5,
         material: &Lambertian {
             albedo: vec3(0.9, 0.1, 0.1),
         },
     };
     // Gold
-    let s3 = Sphere {
-        center: Point3f::new(1.0, 0.0, -1.0),
+    let s_pos_y = Sphere {
+        center: Point3f::new(0.0, 1.1, 0.0),
         radius: 0.5,
         material: &Metal {
             albedo: vec3(0.8, 0.6, 0.2),
             roughness: 0.3,
         },
     };
-    // Silver
-    let s4 = Sphere {
-        center: Point3f::new(-1.0, 0.0, -1.0),
+    // Chrome
+    let s_pos_z = Sphere {
+        center: Point3f::new(0.0, 0.0, 1.1),
         radius: 0.5,
         material: &Metal {
             albedo: vec3(0.8, 0.8, 0.8),
             roughness: 0.0,
         },
     };
-    // Glass
-    let s5 = Sphere {
-        center: Point3f::new(0.0, 0.0, -0.5),
+
+    let s_neg_x = Sphere {
+        center: Point3f::new(-1.1, 0.0, 0.0),
         radius: 0.5,
+        material: &Lambertian {
+            albedo: vec3(0.0, 1.0, 1.0),
+        },
+    };
+
+    let s_neg_z = Sphere {
+        center: Point3f::new(0.0, 0.0, -1.1),
+        radius: 0.5,
+        material: &Lambertian {
+            albedo: vec3(1.0, 1.0, 0.0),
+        },
+    };
+
+    // Glass
+    let s_center = Sphere {
+        center: Point3f::new(0.0, 0.0, 0.0),
+        radius: 0.4,
         material: &Dielectric {
             refraction_index: 1.33333,
         },
     };
 
-    scene.objects.push(&s1);
-    scene.objects.push(&s2);
-    scene.objects.push(&s3);
-    scene.objects.push(&s4);
-    scene.objects.push(&s5);
+    // Glass
+    let s_center_bubble = Sphere {
+        center: Point3f::new(0.0, 0.0, 0.0),
+        radius: -0.3,
+        material: &Dielectric {
+            refraction_index: 1.33333,
+        },
+    };
+
+    let s = 0.49;
+    let mut vertices = Vec::with_capacity(8);
+    for x in 0..=1 {
+        for y in 0..=1 {
+            for z in 0..=1 {
+                let (x, y, z) = (
+                    x as Float * 2.0 - 1.0,
+                    y as Float * 2.0 - 1.0,
+                    z as Float * 2.0 - 1.0,
+                );
+                vertices.push(point3(x, y, z) * s);
+            }
+        }
+    }
+    let indices: Vec<(usize, usize, usize)> = vec![
+        // negative x
+        (0, 1, 3),
+        (0, 3, 2),
+        // negative y
+        (0, 4, 5),
+        (0, 5, 1),
+        // negative z
+        (0, 2, 6),
+        (0, 6, 4),
+        // positive x
+        (7, 5, 4),
+        (7, 4, 6),
+        // positive y
+        (7, 6, 2),
+        (7, 2, 3),
+        // positive z
+        (7, 3, 1),
+        (7, 1, 5),
+    ];
+
+    // let m = Lambertian {
+    //     albedo: vec3(0.8, 0.8, 0.8),
+    // };
+    // let m = Metal {
+    //     albedo: vec3(0.9, 0.9, 0.9),
+    //     roughness: 0.01,
+    // };
+    let m = Dielectric {
+        refraction_index: 1.33333,
+    };
+    // let m = NullMaterial;
+
+    let triangles: Vec<Triangle> = indices
+        .iter()
+        .map(|&(a, b, c)| Triangle {
+            positions: [vertices[a], vertices[b], vertices[c]],
+            material: &m,
+        })
+        .collect();
+
+    scene.objects.push(&ground);
+
+    scene.objects.push(&s_pos_x);
+    scene.objects.push(&s_pos_y);
+    // scene.objects.push(&s_pos_z);
+
+    scene.objects.push(&s_neg_x);
+    scene.objects.push(&s_neg_z);
+
+    scene.objects.push(&s_center);
+    // scene.objects.push(&s_center_bubble);
+
+    // triangles.iter().for_each(|t| scene.objects.push(t));
 
     let camera = Camera::from_spec(CameraSpec {
         vfov: 60.0,
         aspect: render_options.nx as Float / render_options.ny as Float,
-        // look_from: Point3f::new(1.0, 1.0, 1.0),
-        look_from: Point3f::new(1.0, 1.5, 3.0),
-        look_at: Point3f::new(0.0, 0.0, -1.0),
+        // look_from: Point3f::new(0.0, 0.0, 3.0),
+        // look_from: Point3f::new(0.0, 0.0, 0.1),
+        look_from: Point3f::new(2.0, 1.5, 4.0),
+        look_at: Point3f::new(0.0, 0.0, 0.0),
         up: vec3(0.0, 1.0, 0.0),
     });
 

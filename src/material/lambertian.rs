@@ -10,10 +10,12 @@ pub struct Lambertian {
 
 impl Material for Lambertian {
     fn scatter(&self, _ray: &Ray, hit: &HitStruct, attenuation: &mut Vec3f) -> Option<Ray> {
-        let target = hit.p + hit.n + random_in_unit_sphere();
-        let scattered = Ray::new(hit.p, target - hit.p);
         *attenuation = self.albedo;
-        Some(scattered)
+
+        let HitStruct { p, n, .. } = *hit;
+        let n = n.normalized();
+        let d = n + random_in_unit_sphere();
+        Some(Ray::new(p, d))
     }
 }
 

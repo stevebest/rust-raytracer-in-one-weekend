@@ -16,6 +16,13 @@ impl<T> Vec3<T> {
         Vec3 { x, y, z }
     }
 
+    pub fn has_nans(&self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.x != self.x || self.y != self.y || self.z != self.z
+    }
+
     /// Inner (dot) product
     ///
     /// ```

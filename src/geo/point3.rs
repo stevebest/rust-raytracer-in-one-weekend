@@ -58,6 +58,20 @@ where
 }
 
 ///
+/// Point scaling.
+///
+impl<T> std::ops::Mul<T> for Point3<T>
+where
+    T: Numeric<T>,
+{
+    type Output = Point3<T>;
+
+    fn mul(self, s: T) -> Self::Output {
+        Point3::new(self.x * s, self.y * s, self.z * s)
+    }
+}
+
+///
 /// Linearly interpolates between two points.
 ///
 /// ```

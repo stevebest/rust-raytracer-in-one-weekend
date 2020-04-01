@@ -13,15 +13,18 @@ pub struct Triangle<'a> {
 impl Hit for Triangle<'_> {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitStruct<'_>> {
         if let Some(intersection) = self.intersection(ray) {
-            let Intersection { p, t, n, uv: _, .. } = intersection;
+            let Intersection { p, t, n, .. } = intersection;
             if t > t_min && t < t_max {
+                let (n, front_face) = if ray.direction().dot(n) < 0.0 {
+                    (n, true)
+                } else {
+                    (-n, false)
+                };
                 Some(HitStruct {
                     t,
                     p,
                     n,
-                    /// True if the incoming ray hit the front face of the surface
-                    front_face: ray.direction().dot(n) < 0.0,
-                    /// Material of a surface
+                    front_face,
                     material: self.material,
                 })
             } else {

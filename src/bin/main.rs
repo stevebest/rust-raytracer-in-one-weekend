@@ -201,7 +201,7 @@ fn main() -> Result<(), std::io::Error> {
         radius: 100.0,
         material: &Metal {
             albedo: vec3(0.5, 0.5, 0.5),
-            roughness: 0.0,
+            roughness: 0.1,
         },
         // material: &Lambertian {
         //     albedo: vec3(0.3, 0.3, 0.3),
@@ -224,13 +224,12 @@ fn main() -> Result<(), std::io::Error> {
             roughness: 0.3,
         },
     };
-    // Chrome
+    // Glass
     let s_pos_z = Sphere {
         center: Point3f::new(0.0, 0.0, 1.1),
         radius: 0.5,
-        material: &Metal {
-            albedo: vec3(0.8, 0.8, 0.8),
-            roughness: 0.0,
+        material: &Dielectric {
+            refraction_index: 1.5,
         },
     };
 
@@ -250,25 +249,7 @@ fn main() -> Result<(), std::io::Error> {
         },
     };
 
-    // Glass
-    let s_center = Sphere {
-        center: Point3f::new(0.0, 0.0, 0.0),
-        radius: 0.4,
-        material: &Dielectric {
-            refraction_index: 1.33333,
-        },
-    };
-
-    // Glass
-    let s_center_bubble = Sphere {
-        center: Point3f::new(0.0, 0.0, 0.0),
-        radius: -0.3,
-        material: &Dielectric {
-            refraction_index: 1.33333,
-        },
-    };
-
-    let s = 0.49;
+    let s = 0.499;
     let mut vertices = Vec::with_capacity(8);
     for x in 0..=1 {
         for y in 0..=1 {
@@ -324,18 +305,13 @@ fn main() -> Result<(), std::io::Error> {
         .collect();
 
     scene.objects.push(&ground);
-
     scene.objects.push(&s_pos_x);
     scene.objects.push(&s_pos_y);
-    // scene.objects.push(&s_pos_z);
-
+    scene.objects.push(&s_pos_z);
     scene.objects.push(&s_neg_x);
     scene.objects.push(&s_neg_z);
 
-    scene.objects.push(&s_center);
-    // scene.objects.push(&s_center_bubble);
-
-    // triangles.iter().for_each(|t| scene.objects.push(t));
+    triangles.iter().for_each(|t| scene.objects.push(t));
 
     let camera = Camera::from_spec(CameraSpec {
         vfov: 60.0,

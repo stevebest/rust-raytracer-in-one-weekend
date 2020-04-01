@@ -15,13 +15,15 @@ impl Material for Dielectric {
         let mut rng = rand::thread_rng();
 
         *attenuation = vec3(1.0, 1.0, 1.0);
-        // ray direction, normalized
-        let d = r_in.direction().normalized();
 
-        let (etai_over_etat, n) = if rec.front_face {
-            (self.refraction_index.recip(), rec.n.normalized())
+        // incoming ray direction, normalized
+        let d = r_in.direction().normalized();
+        let n = rec.n;
+
+        let etai_over_etat = if rec.front_face {
+            self.refraction_index.recip()
         } else {
-            (self.refraction_index, -rec.n.normalized())
+            self.refraction_index
         };
 
         let cos_theta = Vec3f::dot(-d, n).min(1.0).max(-1.0);
@@ -74,9 +76,9 @@ fn refract(uv: Vec3f, n: Vec3f, etai_over_etat: Float) -> Vec3f {
     assert!(!uv.has_nans(), "refract: uv has NaNs: {:?}", uv);
     assert!(!n.has_nans(), "refract: uv has NaNs: {:?}", n);
 
-    let cos_theta = -uv.dot(n);
+    let cos_theta = (-uv).dot(n).min(1.0);
     assert!(
-        cos_theta >= -1.0 && cos_theta <= 1.0,
+        cos_theta >= 0.0 && cos_theta <= 1.0,
         "refract: cos_theta = {}",
         cos_theta
     );

@@ -85,6 +85,7 @@ impl<T> Vec3<T> {
     }
 }
 
+/// Vector dot-product
 fn dot<T>(u: &Vec3<T>, v: &Vec3<T>) -> T
 where
     T: Numeric<T>,

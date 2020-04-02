@@ -41,6 +41,10 @@ impl Ray {
         self.d
     }
 
+    pub fn origin_and_direction(&self) -> (Point3f, Vec3f) {
+        (self.origin(), self.direction())
+    }
+
     ///
     /// Calculates a position along the ray at time `t`.
     ///

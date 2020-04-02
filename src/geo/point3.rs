@@ -16,6 +16,7 @@ impl<T> Point3<T> {
         Point3 { x, y, z }
     }
 
+    /// Returns the origin: (0.0, 0.0, 0.0)
     pub fn origin() -> Point3<T>
     where
         T: Zero,
@@ -24,6 +25,48 @@ impl<T> Point3<T> {
             x: T::zero(),
             y: T::zero(),
             z: T::zero(),
+        }
+    }
+
+    /// Component-wise minimum
+    ///
+    /// ```
+    /// use pbrt::geo::*;
+    ///
+    /// let p1 = point3(1.0, 2.0, -3.0);
+    /// let p2 = point3(-1.0, 3.0, 2.0);
+    ///
+    /// assert_eq!(p1.min(p2), point3(-1.0, 2.0, -3.0));
+    /// ```
+    pub fn min(&self, other: Point3<T>) -> Point3<T>
+    where
+        T: Copy + PartialOrd,
+    {
+        Point3 {
+            x: min(self.x, other.x),
+            y: min(self.y, other.y),
+            z: min(self.z, other.z),
+        }
+    }
+
+    /// Component-wise maximum
+    ///
+    /// ```
+    /// use pbrt::geo::*;
+    ///
+    /// let p1 = point3(1.0, 2.0, -3.0);
+    /// let p2 = point3(-1.0, 3.0, 2.0);
+    ///
+    /// assert_eq!(p1.max(p2), point3(1.0, 3.0, 2.0));
+    /// ```
+    pub fn max(&self, other: Point3<T>) -> Point3<T>
+    where
+        T: Copy + PartialOrd,
+    {
+        Point3 {
+            x: max(self.x, other.x),
+            y: max(self.y, other.y),
+            z: max(self.z, other.z),
         }
     }
 }
@@ -92,4 +135,26 @@ pub fn lerp(t: Float, p1: Point3f, p2: Point3f) -> Point3f {
     // );
     // Point3f::new(x, y, z)
     p1 + (p2 - p1) * t
+}
+
+/*
+** Private area
+*/
+
+#[inline]
+fn min<T: PartialOrd>(x: T, y: T) -> T {
+    if x <= y {
+        x
+    } else {
+        y
+    }
+}
+
+#[inline]
+fn max<T: PartialOrd>(x: T, y: T) -> T {
+    if x >= y {
+        x
+    } else {
+        y
+    }
 }

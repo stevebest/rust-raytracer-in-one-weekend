@@ -10,6 +10,9 @@ pub struct Ray {
 }
 
 impl Ray {
+    /// Creates a new ray from origin point `o` and normalized direction
+    /// vector `d`.
+    ///
     /// ```
     /// use pbrt::geo::{Point3f, Vec3f, Ray};
     ///
@@ -22,6 +25,12 @@ impl Ray {
     /// ```
     pub fn new(o: Point3f, d: Vec3f) -> Ray {
         Ray { o, d }
+    }
+
+    /// Creates a new ray from origin point `o` and a direction vector `d`,
+    /// which is not guaranteed to be normalized.
+    pub fn new_unnormalized(o: Point3f, d: Vec3f) -> Ray {
+        Ray::new(o, d.normalized())
     }
 
     pub fn origin(&self) -> Point3f {

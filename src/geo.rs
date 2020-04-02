@@ -1,4 +1,5 @@
 pub mod bounds2;
+pub mod bounds3;
 pub mod mat4;
 pub mod point2;
 pub mod point3;
@@ -8,6 +9,7 @@ pub mod vec2;
 pub mod vec3;
 
 pub use bounds2::{Bounds2, Bounds2f};
+pub use bounds3::{Bounds3, Bounds3f};
 
 pub use point2::{Point2, Point2f};
 pub use point3::{Point3, Point3f};
@@ -90,4 +92,28 @@ where
 /// ```
 pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 - t) * v1 + t * v2
+}
+
+///
+/// Minimum of two values.
+///
+#[inline]
+pub fn min<T: PartialOrd>(x: T, y: T) -> T {
+    if x <= y {
+        x
+    } else {
+        y
+    }
+}
+
+///
+/// Maximum of two values.
+///
+#[inline]
+pub fn max<T: PartialOrd>(x: T, y: T) -> T {
+    if x >= y {
+        x
+    } else {
+        y
+    }
 }

@@ -1,4 +1,5 @@
 use crate::geo::vec3::Vec3;
+use crate::geo::{max, min};
 use crate::num_traits::{Float, Numeric, Zero};
 
 /// A point in 3-dimensional space.
@@ -71,6 +72,12 @@ impl<T> Point3<T> {
     }
 }
 
+impl Point3f {
+    pub fn lerp(t: Float, p1: Point3f, p2: Point3f) -> Point3f {
+        lerp(t, p1, p2)
+    }
+}
+
 ///
 /// Point-vector addition.
 ///
@@ -135,26 +142,4 @@ pub fn lerp(t: Float, p1: Point3f, p2: Point3f) -> Point3f {
     // );
     // Point3f::new(x, y, z)
     p1 + (p2 - p1) * t
-}
-
-/*
-** Private area
-*/
-
-#[inline]
-fn min<T: PartialOrd>(x: T, y: T) -> T {
-    if x <= y {
-        x
-    } else {
-        y
-    }
-}
-
-#[inline]
-fn max<T: PartialOrd>(x: T, y: T) -> T {
-    if x >= y {
-        x
-    } else {
-        y
-    }
 }

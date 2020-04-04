@@ -10,10 +10,17 @@ use pbrt::material::*;
 use pbrt::prelude::*;
 
 fn tonemap(colors: &[LinearColor], (nx, ny): (usize, usize)) -> Vec<Rgba<u8>> {
+    use rayon::prelude::*;
+
     let mut pixels = Vec::<Rgba<u8>>::with_capacity(nx * ny);
     pixels.resize_with(nx * ny, Default::default);
+    let max_white = (0.7152f32).recip()
+        * colors
+            .par_iter()
+            .map(|c| c.luminance())
+            .reduce(|| 0.0, |a, b| if a > b { a } else { b });
     colors.iter().zip(pixels.iter_mut()).for_each(|(c, p)| {
-        *p = c.to_rgba();
+        *p = c.reinhard_extended(max_white).to_rgba();
     });
     pixels
 }
@@ -40,15 +47,28 @@ fn ray_color(scene: &Scene, ray: &Ray, limit: usize) -> LinearColor {
         let unit = ray.direction().normalized();
         let t = (unit.y + 1.0) * 0.5;
 
+        let sun = unit.dot(vec3(-1.0, 1.0, 1.0).normalized());
+
         // Sky
         // lerp(t, LinearColor::from_channels(1.0, 1.0, 1.0, 1.0), LinearColor::from_channels(0.5, 0.7, 1.0, 1.0))
 
         // Studio
-        lerp(
-            t,
-            LinearColor::from_channels(0.0, 0.0, 0.0, 0.0),
-            LinearColor::from_channels(1.0, 1.0, 1.0, 0.0),
-        )
+        // lerp(
+        //     t,
+        //     LinearColor::from_channels(0.0, 0.0, 0.0, 0.0),
+        //     LinearColor::from_channels(1.0, 1.0, 1.0, 0.0),
+        // )
+
+        if sun > 0.98 {
+            LinearColor::from_channels(100.0, 100.0, 85.0, 1.0)
+        } else {
+            // Sky
+            lerp(
+                t,
+                LinearColor::from_channels(1.0, 1.0, 1.0, 1.0),
+                LinearColor::from_channels(0.5, 0.7, 1.0, 1.0),
+            )
+        }
 
         // lerp(t, LinearColor::from_channels(0.7, 0.2, 0.1, 1.0), LinearColor::from_channels(0.5, 0.7, 1.0, 1.0))
         // lerp(t, LinearColor::from_channels(1.0, 1.0, 1.0, 1.0), LinearColor::from_channels(0.0, 0.0, 0.0, 1.0))
@@ -199,29 +219,29 @@ fn main() -> Result<(), std::io::Error> {
     let ground = Sphere {
         center: Point3f::new(0.0, -100.5, -1.0),
         radius: 100.0,
-        material: &Metal {
-            albedo: vec3(0.5, 0.5, 0.5),
-            roughness: 0.1,
-        },
-        // material: &Lambertian {
-        //     albedo: vec3(0.3, 0.3, 0.3),
+        // material: &Metal {
+        //     albedo: vec3(0.5, 0.5, 0.5),
+        //     roughness: 0.1,
         // },
-    };
-    // Rubber
-    let s_pos_x = Sphere {
-        center: Point3f::new(1.1, 0.0, 0.0),
-        radius: 0.5,
         material: &Lambertian {
-            albedo: vec3(0.9, 0.1, 0.1),
+            albedo: vec3(0.3, 0.3, 0.3),
         },
     };
     // Gold
-    let s_pos_y = Sphere {
-        center: Point3f::new(0.0, 1.1, 0.0),
+    let s_pos_x = Sphere {
+        center: Point3f::new(1.1, 0.0, 0.0),
         radius: 0.5,
         material: &Metal {
             albedo: vec3(0.8, 0.6, 0.2),
             roughness: 0.3,
+        },
+    };
+    // Rubber
+    let s_pos_y = Sphere {
+        center: Point3f::new(0.0, 1.01, 0.0),
+        radius: 0.5,
+        material: &Lambertian {
+            albedo: vec3(0.9, 0.1, 0.1),
         },
     };
     // Glass
@@ -236,8 +256,9 @@ fn main() -> Result<(), std::io::Error> {
     let s_neg_x = Sphere {
         center: Point3f::new(-1.1, 0.0, 0.0),
         radius: 0.5,
-        material: &Lambertian {
-            albedo: vec3(0.0, 1.0, 1.0),
+        material: &Metal {
+            albedo: vec3(0.8, 0.8, 0.8),
+            roughness: 0.0,
         },
     };
 

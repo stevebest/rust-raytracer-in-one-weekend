@@ -30,6 +30,32 @@ impl LinearColor {
             a: rgba.a as f32 / 255.0,
         }
     }
+
+    pub fn luminance(&self) -> Float {
+        // The order of addition is important for maximizing accuracy [citation needed]
+        self.b * 0.0722 + self.r * 0.2126 + self.g * 0.7152
+    }
+
+    pub fn reinhard(&self) -> LinearColor {
+        LinearColor {
+            r: self.r / (1.0 + self.r),
+            g: self.g / (1.0 + self.g),
+            b: self.b / (1.0 + self.b),
+            a: self.a,
+        }
+    }
+
+    pub fn reinhard_extended(&self, max_white: Float) -> LinearColor {
+        // let numerator = self * (1.0f + (self / vec3(max_white * max_white)));
+        let mw2 = max_white * max_white;
+        LinearColor {
+            r: (self.r * (1.0 + (self.r / mw2))) / (1.0 + self.r),
+            g: (self.g * (1.0 + (self.g / mw2))) / (1.0 + self.g),
+            b: (self.b * (1.0 + (self.b / mw2))) / (1.0 + self.b),
+            a: self.a,
+        }
+        // numerator / (1.0f + v);
+    }
 }
 
 impl Default for LinearColor {

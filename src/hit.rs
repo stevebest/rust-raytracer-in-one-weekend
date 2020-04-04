@@ -20,6 +20,8 @@ pub struct HitStruct<'a> {
     pub front_face: bool,
     /// Material of a surface
     pub material: &'a dyn Material,
+    /// Private field to prevent struct literal instantiation.
+    _private: (),
 }
 
 impl<'a> HitStruct<'a> {
@@ -42,6 +44,7 @@ impl<'a> HitStruct<'a> {
             n,
             front_face,
             material,
+            _private: (),
         }
     }
 }

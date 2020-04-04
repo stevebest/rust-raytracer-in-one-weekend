@@ -15,18 +15,7 @@ impl Hit for Triangle<'_> {
         if let Some(intersection) = self.intersection(ray) {
             let Intersection { p, t, n, .. } = intersection;
             if t > t_min && t < t_max {
-                let (n, front_face) = if ray.direction().dot(n) < 0.0 {
-                    (n, true)
-                } else {
-                    (-n, false)
-                };
-                Some(HitStruct {
-                    t,
-                    p,
-                    n,
-                    front_face,
-                    material: self.material,
-                })
+                Some(HitStruct::new(t, p, ray, n, self.material))
             } else {
                 None
             }
